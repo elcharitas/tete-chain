@@ -50,7 +50,7 @@ export function useWallet({ sync = false, auto = true } = {}) {
             ?.listAccounts()
             .then(setAccount)
             .then(() => snackbar("Wallet connected successfully!"));
-    }, [ethProvider, ethProvider.listAccounts, setAccount, snackbar]);
+    }, [ethProvider, setAccount, snackbar]);
 
     useEffect(() => {
         if (connected) ethProvider?.getBalance(connected).then(setBalance);
