@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useContext, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useSnackbar } from "@saas-ui/react";
-import { Context } from "../components/Provider";
+import { useValues } from "../components/Provider";
 import { provider } from "./ethers";
 
 export function useWallet({ sync = false, auto = true } = {}) {
@@ -12,7 +12,7 @@ export function useWallet({ sync = false, auto = true } = {}) {
         ethProvider,
         setProvider,
         network,
-    } = useContext(Context);
+    } = useValues();
 
     const snackbar = useSnackbar();
 

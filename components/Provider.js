@@ -1,8 +1,18 @@
 import Head from "next/head";
-import { createContext, useState } from "react";
+import { createContext, useState, useContext } from "react";
 import consts, { app_name } from "../const";
 
 export const Context = createContext({});
+
+/**
+ *
+ * @param {string[]} values
+ * @returns {unknown[] | Record<string, unknown>}
+ */
+export function useValues(values = []) {
+    const context = useContext(Context);
+    return values?.length > 0 ? values.map((key) => context[key]) : context;
+}
 
 export default function Provider({ children, value }) {
     const [account, setAccount] = useState("");
