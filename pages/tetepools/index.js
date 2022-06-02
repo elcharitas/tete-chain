@@ -1,6 +1,6 @@
 import { Flex, Text } from "@chakra-ui/react";
-import Page from "../../components/Page";
-import TetePools from "../../components/TetePools";
+import Page from "../../components/Layouts/Page";
+import PoolModule from "../../components/Modules/PoolModule";
 
 export default function index({ sidebar }) {
     return (
@@ -21,7 +21,7 @@ export default function index({ sidebar }) {
                         </Text>
                     </Flex>
                 </Flex>
-                <TetePools />
+                <PoolModule />
             </Page>
         </>
     );
