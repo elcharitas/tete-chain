@@ -45,6 +45,7 @@ export const provider = {
 
     async connect(chainId) {
         if (!this.instance) {
+            this.chainId = chainId;
             this.instance = await web3Modal(chainId).connect();
         }
         return this.instance;
@@ -57,17 +58,17 @@ export const provider = {
 
     async ethers(chainId) {
         return await this.connect(chainId).then(
-            (instance) => new ethers.providers.Web3Provider(instance)
+            (instance) => new ethers.providers.Web3Provider(instance, chainId)
         );
     },
 
-    async contract(addr = tete_addr, abi = tete_abi, sync = false) {
+    async contract(addr = "", abi = [], sync = false) {
         if (!this.contracts[addr])
             this.contracts[addr] = contract(
                 addr,
                 abi,
                 !sync
-                    ? await this.ethers(this.chainId)
+                    ? (await this.ethers(this.chainId)).getSigner()
                     : this.ethersSync(this.rpcNode)
             );
         return this.contracts[addr];
@@ -95,7 +96,7 @@ export const provider = {
  * @param {ethers.providers.BaseProvider} provider
  * @returns {{[method: string]: (...args: any[]) => Promise<unknown>}}
  */
-function contract(addr, abi, provider) {
+function contract(addr, abi = [], provider) {
     if (!provider || typeof addr !== "string" || !abi?.length) return false;
     if (typeof abi[0] === "string") {
         const iface = new utils.Interface(abi);
@@ -103,10 +104,10 @@ function contract(addr, abi, provider) {
     }
     const instance = new ethers.Contract(addr, abi, provider);
     const methods = {};
-    for (let method of abi.map()) {
-        methods[method.name] = () => {
+    for (let { name, inputs = [], outputs = [] } of abi) {
+        methods[name] = () => {
             const args = [];
-            method?.inputs.forEach((input, index) => {
+            inputs.forEach((input, index) => {
                 input.value = arguments[index];
                 switch (input?.type.match(/([a-z]+)/)[1]) {
                     case "address":
@@ -123,30 +124,38 @@ function contract(addr, abi, provider) {
                 }
             });
             return new Promise((resolve, reject) => {
-                instance[method.name](...args)
+                instance[name](...args)
                     .then((response) => {
                         const result = [];
-                        method?.outputs.forEach((output, index) => {
-                            output.value = response[index];
+                        outputs.forEach((output, index) => {
+                            output.value =
+                                outputs.length > 1 ? response[index] : response;
                             switch (output?.type.match(/([a-z]+)/)[1]) {
                                 case "uint":
-                                    args.push(
+                                    result.push(
                                         utils.formatUnits(
-                                            output.value.toString(),
+                                            String(output.value),
                                             "ether"
                                         )
                                     );
                                     break;
                                 case "bytes":
-                                    args.push(utils.toUtf8String(output.value));
+                                    result.push(
+                                        utils.toUtf8String(output.value)
+                                    );
                                     break;
                                 default:
-                                    args.push(output.value);
+                                    result.push(output.value);
                             }
                         });
-                        resolve([...response, ...result]);
+                        resolve(result);
                     })
-                    .catch(reject);
+                    .catch((e) =>
+                        resolve(
+                            e?.reason ||
+                                "Oops! This is something I can't handle"
+                        )
+                    );
             });
         };
     }
